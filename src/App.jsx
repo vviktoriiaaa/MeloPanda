@@ -139,8 +139,17 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  // FIXED QUIZ LOGIC
   const checkAnswer = (option) => {
-    if (option === currentQuiz.correct) {
+    // нельзя кликать после завершения
+    if (result === t.complete) return;
+
+    // защита от двойного тапа / спама
+    if (showReward) return;
+
+    const isCorrect = option === currentQuiz.correct;
+
+    if (isCorrect) {
       setResult(language === 'EN' ? 'Correct ✅' : 'Правильно ✅');
 
       setScore((prev) => prev + 10);
@@ -403,47 +412,6 @@ export default function App() {
             </div>
           </div>
 
-          <div className="mt-10 rounded-[32px] bg-black/30 border border-white/10 p-6">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-              <div>
-                <p className="text-cyan-300 font-bold">
-                  🎧 NOW PLAYING
-                </p>
-
-                <h2 className="text-4xl font-black mt-2">
-                  {currentSong.title}
-                </h2>
-
-                <p className="text-white/60 mt-2 text-lg">
-                  {currentSong.artist}
-                </p>
-              </div>
-
-              <div className="flex items-end gap-1 h-12">
-                {[20, 35, 25, 40, 18, 32].map((h, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ height: [12, h, 18] }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1,
-                      delay: i * 0.1,
-                    }}
-                    className="w-2 rounded-full bg-gradient-to-t from-cyan-400 to-pink-500"
-                  />
-                ))}
-              </div>
-            </div>
-
-            <audio
-              ref={audioRef}
-              src={currentSong.url}
-              controls
-              autoPlay
-              className="w-full mt-8"
-            />
-          </div>
-
           <div className="mt-10 rounded-[36px] border border-white/10 bg-black/30 p-8">
             <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
               <div>
@@ -472,11 +440,12 @@ export default function App() {
             <div className="grid md:grid-cols-2 gap-5">
               {currentQuiz.options.map((option) => (
                 <motion.button
+                  disabled={result === t.complete || showReward}
                   whileTap={{ scale: 0.97 }}
                   whileHover={{ scale: 1.02 }}
                   key={option}
                   onClick={() => checkAnswer(option)}
-                  className="py-6 rounded-3xl bg-white/5 border border-white/10 text-2xl font-bold hover:border-cyan-400/40 hover:bg-cyan-400/10 transition"
+                  className="py-6 rounded-3xl bg-white/5 border border-white/10 text-2xl font-bold hover:border-cyan-400/40 hover:bg-cyan-400/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {option}
                 </motion.button>
