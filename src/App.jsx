@@ -90,6 +90,10 @@ export default function App() {
   const [result, setResult] = useState('');
   const [showReward, setShowReward] = useState(false);
 
+  // 🔥 FIX
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [isLessonFinished, setIsLessonFinished] = useState(false);
+
   const audioRef = useRef(null);
 
   const currentSong = songs[songIndex];
@@ -139,13 +143,12 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // FIXED QUIZ LOGIC
+  // ✅ ПОЛНОСТЬЮ ПОФИКШЕННАЯ ЛОГИКА
   const checkAnswer = (option) => {
-    // нельзя кликать после завершения
-    if (result === t.complete) return;
+    // защита от повторного клика
+    if (isAnswered || isLessonFinished) return;
 
-    // защита от двойного тапа / спама
-    if (showReward) return;
+    setIsAnswered(true);
 
     const isCorrect = option === currentQuiz.correct;
 
@@ -167,11 +170,15 @@ export default function App() {
     }
 
     setTimeout(() => {
+      // следующий вопрос
       if (quizIndex < currentSong.quizzes.length - 1) {
         setQuizIndex((prev) => prev + 1);
         setResult('');
+        setIsAnswered(false);
       } else {
+        // конец теста
         setResult(t.complete);
+        setIsLessonFinished(true);
       }
     }, 1200);
   };
@@ -369,6 +376,12 @@ export default function App() {
                       setSongIndex(index);
                       setQuizIndex(0);
                       setResult('');
+                      setCombo(0);
+
+                      // 🔥 FIX RESET
+                      setIsAnswered(false);
+                      setIsLessonFinished(false);
+
                       setScreen('lesson');
                     }}
                     className={`w-full mt-8 py-5 rounded-3xl bg-gradient-to-r ${song.color} text-black font-black text-xl`}
@@ -412,6 +425,47 @@ export default function App() {
             </div>
           </div>
 
+          <div className="mt-10 rounded-[32px] bg-black/30 border border-white/10 p-6">
+            <div className="flex justify-between items-center flex-wrap gap-4">
+              <div>
+                <p className="text-cyan-300 font-bold">
+                  🎧 NOW PLAYING
+                </p>
+
+                <h2 className="text-4xl font-black mt-2">
+                  {currentSong.title}
+                </h2>
+
+                <p className="text-white/60 mt-2 text-lg">
+                  {currentSong.artist}
+                </p>
+              </div>
+
+              <div className="flex items-end gap-1 h-12">
+                {[20, 35, 25, 40, 18, 32].map((h, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ height: [12, h, 18] }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 1,
+                      delay: i * 0.1,
+                    }}
+                    className="w-2 rounded-full bg-gradient-to-t from-cyan-400 to-pink-500"
+                  />
+                ))}
+              </div>
+            </div>
+
+            <audio
+              ref={audioRef}
+              src={currentSong.url}
+              controls
+              autoPlay
+              className="w-full mt-8"
+            />
+          </div>
+
           <div className="mt-10 rounded-[36px] border border-white/10 bg-black/30 p-8">
             <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
               <div>
@@ -440,7 +494,7 @@ export default function App() {
             <div className="grid md:grid-cols-2 gap-5">
               {currentQuiz.options.map((option) => (
                 <motion.button
-                  disabled={result === t.complete || showReward}
+                  disabled={isAnswered || isLessonFinished}
                   whileTap={{ scale: 0.97 }}
                   whileHover={{ scale: 1.02 }}
                   key={option}
